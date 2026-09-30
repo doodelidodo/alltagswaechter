@@ -1,0 +1,59 @@
+# Alltagswächter – example configuration
+# Copy to config/config.toml and adjust. Every section except [ntfy] is optional.
+
+language = "de"               # "de" or "en" – language of the notifications
+timezone = "Europe/Zurich"
+
+[ntfy]
+url = "https://ntfy.sh"       # or your own server, e.g. "http://ntfy:80" inside Docker
+topic = "change-me-to-something-secret"
+# token = ""                  # or set NTFY_TOKEN in the environment (preferred)
+# username / password also work (NTFY_USERNAME / NTFY_PASSWORD)
+
+# ---------------------------------------------------------------------------
+# Public transport – one block per trip you take regularly.
+# Stop names must match the timetable: find them with
+#   docker compose run --rm alltagswaechter stations "Zürich Enge"
+[[transit]]
+name = "Arbeitsweg"
+from = "Zürich Enge"
+to = "Winterthur"
+departures = ["07:12", "07:42"]   # the departures you usually take
+days = "weekdays"                 # "weekdays", "daily" or ["mon", "wed"]
+watch_minutes = 60                # start watching this long before departure
+poll_minutes = 3
+min_delay = 3                     # report delays from this many minutes
+
+# ---------------------------------------------------------------------------
+# Weather – one push in the morning, only if something matters.
+[weather]
+name = "Zürich"
+latitude = 47.3769
+longitude = 8.5417
+at = "06:45"
+window = ["07:00", "19:00"]       # rain/gusts only count inside this window
+rain_mm = 0.3                     # mm per hour
+gust_kmh = 60
+frost_c = 1.0                     # warn about ice if the morning drops to this
+frost_window = ["06:00", "09:00"]
+# model = "meteoswiss_icon_ch2"   # MeteoSwiss ICON-CH2 via Open-Meteo (default)
+# always = false                  # true = push every morning, even if nothing happens
+
+# ---------------------------------------------------------------------------
+# Waste collection – reminder the evening before.
+[waste]
+at = "19:00"
+openerz_zip = 8001                # City of Zurich (OpenERZ). Remove for other places.
+# ical_url = "https://…/abfall.ics"   # most municipalities / waste apps offer one
+types = ["paper", "cardboard", "organic"]  # OpenERZ keys, or words from iCal titles
+
+# Municipality only publishes a PDF? Type the dates in:
+# [[waste.schedule]]
+# name = "Papier/Karton"
+# dates = [2026-10-15, 2026-12-10]
+# note = "gebündelt bereitstellen"
+#
+# [[waste.schedule]]
+# name = "Grüngut"
+# weekdays = ["mon"]
+# skip = [2026-12-28]

@@ -1,0 +1,21 @@
+# Secrets and your personal config
+.env
+.env.*
+!.env.example
+config/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local data
+data/
+state.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

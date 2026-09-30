@@ -1,0 +1,15 @@
+services:
+  alltagswaechter:
+    image: ghcr.io/doodelidodo/alltagswaechter:latest
+    # build: .            # to build from source instead
+    container_name: alltagswaechter
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Zurich
+      NTFY_TOKEN: ${NTFY_TOKEN:-}
+    volumes:
+      - ./config:/config:ro
+      - alltag_data:/data
+
+volumes:
+  alltag_data:
