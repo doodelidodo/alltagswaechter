@@ -22,8 +22,9 @@ WORKDIR /app
 COPY app ./app
 COPY config.example.toml ./
 
-# The image is only built if the self-test passes.
-RUN python -m app selftest
+# The image is only built if the self-test passes. Nothing it leaves in /tmp
+# may survive into the image (it would belong to root, not to the app user).
+RUN python -m app selftest && rm -rf /tmp/*
 
 USER app
 VOLUME ["/data"]

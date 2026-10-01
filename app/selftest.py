@@ -249,6 +249,24 @@ def test_daily_scheduling() -> None:
     check("daily: a restart at 21:00 still sends", len(r3.notifier.sent) == 1)
 
 
+def test_heartbeat(tmp: Path) -> None:
+    """The self-test runs during the image build as root – it must not leave a
+    heartbeat behind that the app user could never overwrite (0.1.0 bug)."""
+    from . import main as main_mod
+    cfg = config_mod.parse(BASE)
+    original = main_mod.HEARTBEAT
+    try:
+        main_mod.HEARTBEAT = tmp / "hb"
+        main_mod.Runner(cfg, dry_run=True).tick(datetime(2026, 10, 1, 12, 0, tzinfo=TZ))
+        check("heartbeat: dry-run writes none", not main_mod.HEARTBEAT.exists())
+        live = main_mod.Runner(cfg, dry_run=False)
+        live.state.path = None  # keep the test away from /data
+        live.tick(datetime(2026, 10, 1, 12, 0, tzinfo=TZ))
+        check("heartbeat: live loop writes it", main_mod.HEARTBEAT.exists())
+    finally:
+        main_mod.HEARTBEAT = original
+
+
 def test_i18n() -> None:
     check("i18n: de and en have the same keys", set(TEXTS["de"]) == set(TEXTS["en"]))
     check("i18n: waste names same keys", set(WASTE_TYPES["de"]) == set(WASTE_TYPES["en"]))
@@ -274,10 +292,11 @@ def run_all() -> int:
         except Exception:
             check(f"{fn.__name__} crashed", False, traceback.format_exc())
     with tempfile.TemporaryDirectory() as tmp:
-        try:
-            test_state(Path(tmp))
-        except Exception:
-            check("test_state crashed", False, traceback.format_exc())
+        for fn in (test_state, test_heartbeat):
+            try:
+                fn(Path(tmp))
+            except Exception:
+                check(f"{fn.__name__} crashed", False, traceback.format_exc())
 
     failed = [r for r in _results if not r[1]]
     for name, ok, detail in _results:

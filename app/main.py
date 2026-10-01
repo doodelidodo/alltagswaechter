@@ -75,10 +75,18 @@ class Runner:
                 job()
             except Exception:  # one broken check must not stop the others
                 log.exception("check %s failed", name)
-        try:
-            HEARTBEAT.write_text(now.isoformat())
-        except OSError:
-            pass
+        # Heartbeat for the container healthcheck. Not in dry-run: the self-test
+        # runs during the image build as root, and a heartbeat file left behind
+        # there belongs to root – the app user could never update it again and
+        # the container would report "unhealthy" forever (0.1.0 bug).
+        if not self.notifier.dry_run:
+            try:
+                HEARTBEAT.write_text(now.isoformat())
+                self._heartbeat_warned = False
+            except OSError as exc:
+                if not getattr(self, "_heartbeat_warned", False):
+                    log.warning("cannot write heartbeat %s: %s – healthcheck will fail", HEARTBEAT, exc)
+                    self._heartbeat_warned = True
 
     def now(self, which: str) -> None:
         now = datetime.now(self.tz)
